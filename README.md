@@ -6,7 +6,7 @@ Python code to define, train and output ModalPINNs as defined in the paper
 
 > _ModalPINN : an extension of Physics-Informed Neural Networks with enforced truncated Fourier decomposition for periodic flow reconstruction using a limited number of imperfect sensors._ Gaétan Raynaud, Sébastien Houde, Frédérick P. Gosselin (2021) 
 
-Contact : gaetan.raynaud (at) polymtl.ca 
+Contact email : gaetan.raynaud (at) polymtl.ca 
 
 ## How to run basic jobs
 
