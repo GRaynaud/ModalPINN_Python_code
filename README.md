@@ -11,14 +11,14 @@ Contact email : gaetan.raynaud (at) polymtl.ca
 ## Files
 
 The main files are :
--ModalPINN_VortexShedding.py : performs flow reconstruction using ModalPINN with dense or sparse data, possibly with out of synchronisation or delays (see the argument to the parser). It requires:
-    -Load_train_data_desync.py:
+- *ModalPINN_VortexShedding.py* : performs flow reconstruction using ModalPINN with dense or sparse data, possibly with out of synchronisation or delays (see the argument to the parser). It requires:
+    - *Load_train_data_desync.py*:
         Python file containing functions that extract and prepare data for training and validation.
-    -NN_functions.py:
+    - *NN_functions.py*:
         Python file containing functions specific to neural networks, optimisers and plots.
--ClassicPINN_VortexShedding.py : define a PINN for performance comparison with ModalPINN on dense data. It requires:
-    -NN_functions_classicPINN.py which translates the same functions than in NN_functions.py but without the modal approach
--reactions_process.py and text_flow.py provided by M. Boudina to read data sets (see the training data section below)
+- *ClassicPINN_VortexShedding.py* : define a PINN for performance comparison with ModalPINN on dense data. It requires:
+    - *NN_functions_classicPINN.py* which translates the same functions than in NN_functions.py but without the modal approach
+- *reactions_process.py* and *text_flow.py* provided by M. Boudina to read data sets (see the training data section below)
 
 ## How to run basic jobs
 
@@ -72,7 +72,7 @@ Training data presented in the paper was provided by Boudina et al.
 
 and is available for download on Zenodo
 > Boudina, Mouad. (2021). Numerical simulation data of a two-dimensional flow around a fixed circular cylinder [Data set]. Zenodo. http://doi.org/10.5281/zenodo.5039610  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5039610.svg)](https://doi.org/10.5281/zenodo.5039610)
- along with two python scripts (reactions_process.py and text_flow.py) that perform the reading of these files data files.
+ along with two python scripts (*reactions_process.py* and *text_flow.py*) that perform the reading of these files data files.
 
 Nonetheless other data can be used. Provided functions in Load_train_data_desync.py might be reused if the structure of data suits [time step,position] for u,v,p and a list of x,y [position]. Otherwise, it might be necessary to adapt these functions to your data structure.
 
