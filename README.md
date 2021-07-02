@@ -72,7 +72,8 @@ Training data presented in the paper was provided by Boudina et al.
 
 and is available for download on Zenodo
 > Boudina, Mouad. (2021). Numerical simulation data of a two-dimensional flow around a fixed circular cylinder [Data set]. Zenodo. http://doi.org/10.5281/zenodo.5039610  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5039610.svg)](https://doi.org/10.5281/zenodo.5039610)
- along with two python scripts (*reactions_process.py* and *text_flow.py*) that perform the reading of these files data files.
+
+along with two python scripts (*reactions_process.py* and *text_flow.py*) that perform the reading of these files data files.
 
 Nonetheless other data can be used. Provided functions in Load_train_data_desync.py might be reused if the structure of data suits [time step,position] for u,v,p and a list of x,y [position]. Otherwise, it might be necessary to adapt these functions to your data structure.
 
