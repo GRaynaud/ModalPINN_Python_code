@@ -6,6 +6,8 @@ Python code to define, train and output ModalPINNs as defined in the paper
 
 > _ModalPINN : an extension of Physics-Informed Neural Networks with enforced truncated Fourier decomposition for periodic flow reconstruction using a limited number of imperfect sensors._ Gaétan Raynaud, Sébastien Houde, Frédérick P. Gosselin (2021) 
 
+Contact : gaetan.raynaud (at) polymtl.ca 
+
 ## How to run basic jobs
 
 This code is designed to be launched on a computationel cluster (initially for Compute Canada - Graham server) using the following batch commands:
@@ -50,6 +52,17 @@ For a more detailed list of python libraries, see requirements.txt. You can also
     source ~/ENV/bin/activate
     pip install --upgrade pip
     python pip install -r requirements.txt
+
+## Training data
+
+Training data presented in the paper was provided by Boudina et al. 
+> Boudina, M., Gosselin, F., & Étienne, S. (2021). Vortex-induced vibrations: A soft coral feeding strategy? Journal of Fluid Mechanics, 916, A50. doi:10.1017/jfm.2021.252 
+
+and is available for download on Zenodo
+> Boudina, Mouad. (2021). Numerical simulation data of a two-dimensional flow around a fixed circular cylinder [Data set]. Zenodo. http://doi.org/10.5281/zenodo.5039610  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5039610.svg)](https://doi.org/10.5281/zenodo.5039610)
+
+
+Nonetheless other data can be used. Provided functions in Load_train_data_desync.py might be reused if the structure of data suits [time step,position] for u,v,p and a list of x,y [position]. Otherwise, it might be necessary to adapt these functions to your data structure.
 
 ## Licence
 
