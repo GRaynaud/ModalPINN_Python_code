@@ -78,7 +78,7 @@ Nonetheless other data can be used. Provided functions in *Load_train_data_desyn
 
 ## Provided results and import of previously trained ModalPINN
 
-Some of the trained ModalPINN which results are plotted in the main paper are saved in the folders OutputPythonScript. Wieghts and biases values of the model are stored in a pickle archive and can be imported by using these lines  
+Some of the trained ModalPINN which results are plotted in the main paper are saved in the folders OutputPythonScript. Weights and biases values of the model are stored in a pickle archive and can be imported by using these lines  
 
     repertoire= 'OutputPythonScript/Name_of_the_folder'
     filename_restore = repertoire + '/DNN2_40_40_2_tanh.pickle' # Attention to change the name of .pickle depending of the NN layers
