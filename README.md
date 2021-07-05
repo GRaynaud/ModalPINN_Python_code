@@ -11,7 +11,7 @@ Contact email : gaetan.raynaud (at) polymtl.ca
 ## Files
 
 The main files are :
-- *ModalPINN_VortexShedding.py* : performs flow reconstruction using ModalPINN with dense or sparse data, possibly with out of synchronisation or delays (see the argument to the parser). It requires:
+- *ModalPINN_VortexShedding.py* : performs flow reconstruction using ModalPINN with dense or sparse data, possibly with out of synchronisation or gaussian noise (see the argument to the parser). It requires:
     - *Load_train_data_desync.py*:
         Python file containing functions that extract and prepare data for training and validation.
     - *NN_functions.py*:
@@ -22,7 +22,7 @@ The main files are :
 
 ## How to run basic jobs
 
-This code is designed to be launched on a computationel cluster (initially for Compute Canada - Graham server) using the following batch commands:
+This code is designed to be launched on a computationel cluster (initially for Graham server on Compute Canada) using the following batch commands:
 
     #!/bin/bash
     #SBATCH --gres=gpu:t4:1
@@ -37,7 +37,7 @@ This code is designed to be launched on a computationel cluster (initially for C
     python ./ModalPINN_VortexShedding.py --Tmax 9 --Nmes 5000 --Nint 50000 --multigrid --Ngrid 5 --NgridTurn 200 --WidthLayer 25 --Nmodes 3 
     deactivate
 
-For each job launched, a folder is created in ./OutputPythonScript and is identified by date-time information. In this folder, the content of consol prints is saved in a out.txt file alongside other files (mode shapes, various plots...) including the model itself in a pickle archive.
+For each job launched, a folder is created in ./OutputPythonScript and is identified by date-time information. In this folder, the content of console prints is saved in *out.txt* alongside other files (mode shapes, various plots...) including the model itself in a pickle archive.
 
 Please refer to the help for the arguments sent to the parser and to the next section for librairies requirements.
 
@@ -58,7 +58,7 @@ Python libraries
     tensorflow_gpu==1.14.1
     matplotlib==3.1.1
      
-For a more detailed list of python libraries, see requirements.txt. You can also set up an environment with
+For a more detailed list of python libraries, see *requirements.txt*. You can also set up an environment with
 
     virtualenv --no-download ~/ENV
     source ~/ENV/bin/activate
@@ -73,9 +73,9 @@ Training data presented in the paper was provided by Boudina et al.
 and is available for download on Zenodo
 > Boudina, Mouad. (2021). Numerical simulation data of a two-dimensional flow around a fixed circular cylinder [Data set]. Zenodo. http://doi.org/10.5281/zenodo.5039610  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5039610.svg)](https://doi.org/10.5281/zenodo.5039610)
 
-along with two python scripts (*reactions_process.py* and *text_flow.py*) that perform the reading of these files data files.
+along with two python scripts (*reactions_process.py* and *text_flow.py*) that perform the reading of these data files.
 
-Nonetheless other data can be used. Provided functions in Load_train_data_desync.py might be reused if the structure of data suits [time step,position] for u,v,p and a list of x,y [position]. Otherwise, it might be necessary to adapt these functions to your data structure.
+Nonetheless other data can be used. Provided functions in *Load_train_data_desync.py* might be reused if the structure of data suits [time step,element id] for u,v,p and a list of x,y [element id]. Otherwise, it might be necessary to adapt these functions to your data structure.
 
 ## Licence
 
