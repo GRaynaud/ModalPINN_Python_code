@@ -77,6 +77,20 @@ along with two python scripts (*reactions_process.py* and *text_flow.py*) that p
 
 Nonetheless other data can be used. Provided functions in *Load_train_data_desync.py* might be reused if the structure of data suits [time step,element id] for u,v,p and a list of x,y [element id]. Otherwise, it might be necessary to adapt these functions to your data structure.
 
+## Provided results and import of previously trained ModalPINN
+
+Some of the trained ModalPINN which results are plotted in the main paper are saved in the folders OutputPythonScript. Wieghts and biases values of the model are stored in a pickle archive and can be imported by using these lines  
+
+    repertoire= 'OutputPythonScript/Name_of_the_folder'
+    filename_restore = repertoire + '/DNN2_40_40_2_tanh.pickle' # Attention to change the name of .pickle depending of the NN layers
+    w_u,b_u,w_v,b_v,w_p,b_p = nnf.restore_NN(layers,filename_restore)
+
+instead of these:
+
+    w_u,b_u = nnf.initialize_NN(layers)
+    w_v,b_v = nnf.initialize_NN(layers)
+    w_p,b_p = nnf.initialize_NN(layers)
+
 ## Licence
 
 Codes are provided under licence GNU GPL v3.
