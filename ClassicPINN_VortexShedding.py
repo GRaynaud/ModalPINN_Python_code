@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jul  9 11:07:33 2020
+PINN Python Code
+This is the main Python file for performing flow reconstruction using classical PINN
+for comparison with ModalPINN. See details in the readme.md or in the main file ModalPINN_VortexShedding.py
 
-@author: garaya
+@author: Gaétan Raynaud. 
+ORCID : orcid.org/0000-0002-2802-7366
+email : gaetan.raynaud (at) polymtl.ca
 """
-
 # =============================================================================
 # Import des bibliotheques
 # =============================================================================
@@ -28,8 +31,11 @@ from tensorflow.python.client import device_lib
 import NN_functions_classicPINN as nnf
 import Load_train_data_desync as ltd
 
-filename_data = 'DataMouad/fixed_cylinder_atRe100'
-filename_study = 'PINNvsModalPINN/ClassicPINN.csv'
+# Link to simulations data 
+# In the paper, we used those from Boudina et al. (2020) that can be downloaded 
+# at https://zenodo.org/record/5039610
+filename_data = 'Data/fixed_cylinder_atRe100'
+
 
 t0 = time.time()
 # =============================================================================
@@ -45,7 +51,7 @@ plt.rc('figure',titlesize=24)
 
 
 # =============================================================================
-# Out parameters
+# Preparing the writing of console prints in out.txt
 # =============================================================================
 
 class Tee(object):
@@ -61,19 +67,22 @@ class Tee(object):
 
 # =============================================================================
 # File copy and folder creation
+# Here we create a folder containing all the data of this job
+# And we copy current python files to keep track of how the job was launched
 # =============================================================================
-r = np.int(np.ceil(1000*np.random.rand(1)[0]))
+r = np.int(np.ceil(1000*np.random.rand(1)[0])) # This random number is used in case 2 jobs are launched at the exact same time so that the newly created folders does not merge the one into the other
 d = datetime.datetime.now()
 pythonfile = os.path.basename(__file__)
-repertoire = 'OutputPythonScript/ClassicPINN_VS_DenseMes_'+ d.strftime("%Y_%m_%d-%H_%M_%S") + '__' +str(r)
+repertoire = 'OutputPythonScript/ClassicPINN_'+ d.strftime("%Y_%m_%d-%H_%M_%S") + '__' +str(r)
 os.makedirs(repertoire, exist_ok=True)
 copyfile(pythonfile,repertoire+'/Copy_python_script.py')
-
+copyfile('NN_functions.py',repertoire+'/NN_functions.py')
+copyfile('Load_train_data_desync.py',repertoire+'/Load_train_data_desync.py')
 
 f = open(repertoire+'/out.txt', 'w')
 original = sys.stdout
 sys.stdout = Tee(sys.stdout, f)
-print('Copie fichier et stdout ok')
+print('File copy and stdout ok')
 
 
 # Print devices available
@@ -83,6 +92,7 @@ list_devices = device_lib.list_local_devices()
 print('Devices available')
 print(list_devices)
 
+
 # =============================================================================
 # Set arguments passed through bash
 # =============================================================================
@@ -90,10 +100,7 @@ print(list_devices)
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--Tmax',type=float,default=None,help="Define the max time allowed for optimisation (in hours)")
-parser.add_argument('--Nmodes',type=int,default=2,help="Number of modes, including null frequency")
-parser.add_argument('--Nmes',type=int,default=5000,help="Number of measurement points to provide for optimisation")
-parser.add_argument('--Nint',type=int,default=50000,help="Number of computing points to provide for equation evaluation during optimisation")
-parser.add_argument('--LossModes',action="store_true",default=False,help="Use of modal equations during optimisation")
+parser.add_argument('--Nmes',type=int,default=5000,help="Number of measurement points to provide for optimisation")parser.add_argument('--LossModes',action="store_true",default=False,help="Use of modal equations during optimisation")
 parser.add_argument('--multigrid',action="store_true",default=False,help="Use of multi grid")
 parser.add_argument('--Ngrid',type=int,default=1,help="Number of batch for Adam optimization")
 parser.add_argument('--NgridTurn',type=int,default=1000,help="Number of iterations between each batch changement")
@@ -107,14 +114,14 @@ print('Tmax '+str(args.Tmax)+' (h)')
 print('Nmodes %d' % (args.Nmodes))
 print('Nmes %d' % (args.Nmes))
 print('Nint %d' % (args.Nint))
-print('Use Loss Modes : ' + str(args.LossModes))
 print('Multigrid : '+str(args.multigrid))
 print('Ngrid : '+str(args.Ngrid))
 print('Ngrid Turn : '+str(args.NgridTurn))
 print('STD Noise : %.2e' % (args.Noise))
 print('Neurons per layer : %.2e' % (args.WidthLayer))
+
 # =============================================================================
-# Physical parameters 
+# Physical and geometrical parameters 
 # =============================================================================
 
 Re = 100.
@@ -131,20 +138,27 @@ d = 2.*r_c
 u_in = 1.
 rho_0 = 1.
 
-omega_0 = 1.036
-
 geom = [Lxmin,Lxmax,Lymin,Lymax,x_c,y_c,r_c]
 
 def xbc5(s):
+    '''
+    Compute cylinders border x coordinate as a function of curvilinear abscissa s \in [0,1]
+    input : s (tf tensor, usually of shape [Nbc,1])
+    return a tf tensor of the same shape as s
+    '''
     return x_c + r_c*tf.cos(2*np.pi*s)
 def ybc5(s):
+    '''
+    Compute cylinders border y coordinate as a function of curvilinear abscissa s \in [0,1]
+    input : s (tf tensor, usually of shape [Nbc,1])
+    return a tf tensor of the same shape as s
+    '''
     return y_c + r_c*tf.sin(2*np.pi*s)
 
 # =============================================================================
 # Choix de discretisation
 # =============================================================================
 
-Nmodes = args.Nmodes
 
 Nmes = args.Nmes
 Nint = args.Nint
@@ -156,6 +170,8 @@ stdNoise = args.Noise
 
 list_omega = np.asarray([k*omega_0 for k in range(Nmodes)]) 
 
+
+# Structure of each Neural Network that approximate u,v or p as a function of x,y and t
 layers = [3,args.WidthLayer,args.WidthLayer,args.WidthLayer,args.WidthLayer,1]
 
 # =============================================================================
@@ -176,20 +192,24 @@ if args.Tmax==None:
     Tmax = None  #0.5*3600 #8h
 else:
     Tmax = 3600*args.Tmax
-#AdamTmax = 5*3600 # max training time (s)
 
 # =============================================================================
-# Declaration des placeholder
+# Placeholders declaration
+# In TF<2, one can define placeholders and build an operation graph based on these.
+# Values are provided only at the computation in a dictionary tf_dict when running
+# session.run(TF quantity that depends on placeholders,feed_dict=TF dictionary containing placeholders values)
 # =============================================================================
 
-Nxpitot = 40
-Ncyl = 30
-Ntimes = 201
+Nxpitot = 40 # Number of simulated pitot probe locations in the flow (4 sections of 10 points)
+Ncyl = 30 # Number of points around the cylinder to simulated pressure probes
+Ntimes = 201 # Number of timesteps in simulations data
 
+# Placeholders for V_in (penalization of equations)
 x_tf_int = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 y_tf_int = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 t_tf_int = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 
+# Placeholders for general fitting data (especially dense data)
 x_tf_mes = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 y_tf_mes = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 t_tf_mes = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
@@ -197,24 +217,29 @@ u_tf_mes = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 v_tf_mes = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 p_tf_mes = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 
-# Pitot
+# Placeholder for simulated pitot probe
 x_tf_mes_pitot = tf.compat.v1.placeholder(dtype=tf.float32,shape=[Ntimes*Nxpitot,1])
 y_tf_mes_pitot = tf.compat.v1.placeholder(dtype=tf.float32,shape=[Ntimes*Nxpitot,1])
 t_tf_mes_pitot = tf.compat.v1.placeholder(dtype=tf.float32,shape=[Ntimes*Nxpitot,1])
 u_tf_mes_pitot = tf.compat.v1.placeholder(dtype=tf.float32,shape=[Ntimes*Nxpitot,1])
 v_tf_mes_pitot = tf.compat.v1.placeholder(dtype=tf.float32,shape=[Ntimes*Nxpitot,1])
-p_tf_mes_pitot = tf.compat.v1.placeholder(dtype=tf.float32,shape=[Ntimes*Nxpitot,1])
+p_tf_mes_pitot = tf.compat.v1.placeholder(dtype=tf.float32,shape=[Ntimes*Nxpitot,1]) #  Not really used since only u and v are used at these locations for training
 
 
+# Preparing desynchronisation of pitot probe. Especially Used if args.DesyncSparseData == True
 Delta_phi_np_pitot = 0.*np.random.uniform(low=0.0,high=2*np.pi/omega_0, size=Nxpitot)
-Delta_phi_tf_pitot = tf.constant(Delta_phi_np_pitot,dtype=tf.float32,shape=[Nxpitot])
+
+if args.DesyncSparseData:
+    Delta_t_tf_pitot = tf.Variable(Delta_t_np_pitot,dtype=tf.float32,shape=[Nxpitot])
+else:
+    Delta_phi_tf_pitot = tf.constant(Delta_phi_np_pitot,dtype=tf.float32,shape=[Nxpitot])
 
 
 t_tf_mes_pitot_unflatten = tf.reshape(t_tf_mes_pitot,[Ntimes,Nxpitot])
 t_tf_mes_pitot_resync_unflatten = tf.convert_to_tensor([[ t_tf_mes_pitot_unflatten[t,k] - Delta_phi_tf_pitot[k] for k in range(Nxpitot)] for t in range(Ntimes)])
 t_tf_mes_pitot_resync = tf.reshape(t_tf_mes_pitot_resync_unflatten,[Ntimes*Nxpitot,1]) 
 
-# Cylindre
+# Cylindre data for simulated pressure probe
 x_tf_mes_cyl = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 y_tf_mes_cyl = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 t_tf_mes_cyl = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
@@ -226,9 +251,6 @@ s_tf = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 one_s_tf = tf.compat.v1.placeholder(dtype=tf.float32,shape=[None,1])
 
 
-w_tf = tf.constant(list_omega,dtype=tf.float32,shape=[Nmodes])
-
-
 # =============================================================================
 # Model construction
 # =============================================================================
@@ -238,12 +260,27 @@ w_v,b_v = nnf.initialize_NN(layers)
 w_p,b_p = nnf.initialize_NN(layers)
 
 def fluid_u_t(x,y,t):
+    '''
+    Compute u at instant t and position x,y
+    Input: x,y,t TF tensors of shape [Nint,1]
+    Return TF tensor of shape [Nint,1] with real values
+    '''
     return nnf.NN_time_uv(x,y,t,w_u,b_u,geom,omega_0)
 
 def fluid_v_t(x,y,t):
+    '''
+    Compute v at instant t and position x,y
+    Input: x,y,t TF tensors of shape [Nint,1]
+    Return TF tensor of shape [Nint,1] with real values
+    '''
     return nnf.NN_time_uv(x,y,t,w_v,b_v,geom,omega_0)
 
 def fluid_p_t(x,y,t):
+    '''
+    Compute p at instant t and position x,y
+    Input: x,y,t TF tensors of shape [Nint,1]
+    Return TF tensor of shape [Nint,1] with real values
+    '''
     return nnf.NN_time_p(x,y,t,w_p,b_p,omega_0)
 
 # =============================================================================
@@ -392,15 +429,20 @@ def loss_BC(s,t):
 # Training loss creation
 # =============================================================================
 
+# Wrap error on (u,v,p) measurements
 Loss_mes = tf.reduce_mean(loss_mes(x_tf_mes,y_tf_mes,t_tf_mes,u_tf_mes,v_tf_mes,p_tf_mes))
 
+# Wrap error on physical equations
 Loss_int_time_wrap = tf.reduce_mean(loss_int_time(x_tf_int, y_tf_int ,t_tf_int))
 
+# Wrap error on (u,v) measurements at simulated pitot probes locations
 Loss_mes_pitot = tf.reduce_mean(loss_mes_uv(x_tf_mes_pitot,y_tf_mes_pitot,t_tf_mes_pitot_resync,u_tf_mes_pitot,v_tf_mes_pitot))
 Loss_mes_pitot_desync = tf.reduce_mean(loss_mes_uv(x_tf_mes_pitot,y_tf_mes_pitot,t_tf_mes_pitot,u_tf_mes_pitot,v_tf_mes_pitot))
 
+# Wrap error on pressure measurement around cylindre border
 Loss_mes_cyl = tf.reduce_mean(loss_mes_p(x_tf_mes_cyl,y_tf_mes_cyl,t_tf_mes_cyl,p_tf_mes_cyl))
 
+# Simulated experimental losses
 Loss_mes_exp =  Loss_mes_pitot + Loss_mes_cyl
 
 
@@ -427,48 +469,10 @@ GPUtil.showUtilization()
 # Data set preparation
 # =============================================================================
 
-#x_int,y_int,t_int,s_train,xmes_pitot,ymes_pitot,tmes_pitot,umes_pitot,vmes_pitot,pmes_pitot,xmes_cyl,ymes_cyl,tmes_cyl,umes_cyl,vmes_cyl,pmes_cyl,Delta_phi_np_pitot_applied = ltd.training_dict(Nmes,Nint,Nbc,filename_data,geom,Tintmax=1e2,data_selection = 'cylinder_pitot',desync=False, multigrid=multigrid,Ngrid=Ngrid,stdNoise=stdNoise)
 x_int,y_int,t_int,s_train,xmes,ymes,tmes,umes,vmes,pmes = ltd.training_dict(Nmes,Nint,Nbc,filename_data,geom,Tintmin=400.,Tintmax=420.,data_selection = 'all',desync=False, multigrid=multigrid,Ngrid=Ngrid,stdNoise=stdNoise,cut=True,method_int='uniform')
 Nmes = len(xmes)
 Tmin = 400.
 
-
-# if multigrid:
-#     tf_dict = []
-#     for k in range(Ngrid):
-#         tf_dict_temp = {x_tf_int : np.reshape(x_int[k],(Nint,1)),
-#          y_tf_int : np.reshape(y_int[k],(Nint,1)),
-#          t_tf_int : np.reshape(t_int[k],(Nint,1)),
-#          s_tf : np.reshape(s_train,(Nbc,1)),
-#          x_tf_mes_cyl : np.reshape(xmes_cyl,(Ncyl,1)),
-#          y_tf_mes_cyl : np.reshape(ymes_cyl,(Ncyl,1)),
-#          p_tf_mes_cyl : np.reshape(pmes_cyl,(Ncyl,1)),
-#          t_tf_mes_cyl : np.reshape(tmes_cyl,(Ncyl,1)),
-#          x_tf_mes_pitot : np.reshape(xmes_pitot,(Npitot,1)),
-#          y_tf_mes_pitot : np.reshape(ymes_pitot,(Npitot,1)),
-#          u_tf_mes_pitot : np.reshape(umes_pitot,(Npitot,1)),
-#          v_tf_mes_pitot : np.reshape(vmes_pitot,(Npitot,1)),
-#          p_tf_mes_pitot : np.reshape(pmes_pitot,(Npitot,1)),
-#          t_tf_mes_pitot : np.reshape(tmes_pitot,(Npitot,1)),
-#          }
-#         tf_dict.append(tf_dict_temp)
-    
-# else:      
-#     tf_dict = {x_tf_int : np.reshape(x_int,(Nint,1)),
-#          y_tf_int : np.reshape(y_int,(Nint,1)),
-#          t_tf_int : np.reshape(t_int,(Nint,1)),
-#          s_tf : np.reshape(s_train,(Nbc,1)),
-#          x_tf_mes_cyl : np.reshape(xmes_cyl,(Ncyl,1)),
-#          y_tf_mes_cyl : np.reshape(ymes_cyl,(Ncyl,1)),
-#          p_tf_mes_cyl : np.reshape(pmes_cyl,(Ncyl,1)),
-#          t_tf_mes_cyl : np.reshape(tmes_cyl,(Ncyl,1)),
-#          x_tf_mes_pitot : np.reshape(xmes_pitot,(Npitot,1)),
-#          y_tf_mes_pitot : np.reshape(ymes_pitot,(Npitot,1)),
-#          u_tf_mes_pitot : np.reshape(umes_pitot,(Npitot,1)),
-#          v_tf_mes_pitot : np.reshape(vmes_pitot,(Npitot,1)),
-#          p_tf_mes_pitot : np.reshape(pmes_pitot,(Npitot,1)),
-#          t_tf_mes_pitot : np.reshape(tmes_pitot,(Npitot,1))
-#          }
 
 if multigrid:
     tf_dict = []
@@ -527,19 +531,20 @@ GPUtil.showUtilization()
 # Entrainement
 # =============================================================================
 
-
 nnf.print_bar()
-print('Start of training')
-
 t1 = time.time()
-print('Start of training after %d s'%(t1-t0))
-nnf.model_train_scipy(opt_LBFGS,sess,Loss,tf_dict[0],nnf.callback)
+print('Start training after %d s'%(t1-t0))
+
+print('Start L-BFGS-B training')
+List_it_loss_LBFGS,List_it_loss_valid_LBFGS = nnf.model_train_scipy(opt_LBFGS,sess,Loss,tf_dict[0],List_loss = True,tf_dict_valid=tf_dict_valid,loss_valid = Loss_mes)
 
 t2 = time.time()
 print('L-BFGS-B training ended after %d s'%(t2-t1))
 
+print('Start Adam training')
+# Here Adam training is stopped if it reaches a time limit AdamTmax, or number of iterations Nit or if training loss goes under tolAdam
 AdamTmax = Tmax-(t2-t0)
-nnf.model_train_Adam(opt_Adam,sess,Loss,liste_tf_dict=tf_dict,Nit=1e5,tolAdam=1e-3,it=it,itdisp=100,maxTime=AdamTmax,multigrid=multigrid,NgridTurn=NgridTurn)
+List_it_loss_Adam,List_it_loss_valid_Adam = nnf.model_train_Adam(opt_Adam,sess,Loss,liste_tf_dict=tf_dict,Nit=1e5,tolAdam=1e-5,it=it,itdisp=100,maxTime=AdamTmax,multigrid=multigrid,NgridTurn=NgridTurn,List_loss = True,tf_dict_valid=tf_dict_valid,loss_valid = Loss_mes)
 t3 = time.time()
 print('Adam training ended after %d s'%(t3-t2))
 
@@ -556,59 +561,18 @@ print('End of training')
 # Print des erreurs
 # =============================================================================
 
-def r_div_eucli(a,b):
-    '''
-    a,b real numbers
-    return r with a = n*b + r, n (int) and -b/2 <= r < b/2
-    '''
-    rtemp = a%b
-    return np.where(rtemp>0.5*b,rtemp-b,rtemp)
-
-
-
 nnf.print_bar()
 print('Error details')
 nnf.print_bar()
 
+if not(multigrid):
+    tf_dict = [tf_dict]
+
 print('')
-#nnf.tf_print('Border',loss_BC(s_tf),sess,tf_dict[0]) #ok
-nnf.tf_print('Loss eqs. int time',Loss_int_time_wrap,sess,tf_dict[0]) #ok
+nnf.tf_print('Border',loss_BC(s_tf),sess,tf_dict[0])
+nnf.tf_print('Loss eqs. int time',Loss_int_time_wrap,sess,tf_dict[0])
 nnf.tf_print('Loss mesures training',Loss_mes,sess,tf_dict[0])
 nnf.tf_print('Loss mesures validation',Loss_mes,sess,tf_dict_valid)
-
-# print('Validation Resync')
-# Delta_phi_tf_pitot_found_o = sess.run(Delta_phi_tf_pitot)
-# err_rms_resync = np.sqrt(np.mean(np.square((r_div_eucli(Delta_phi_tf_pitot_found_o-Delta_phi_np_pitot_applied,2*np.pi/omega_0)))))
-# err_rms_resync_normalized = err_rms_resync/np.sqrt(np.mean(np.square(Delta_phi_np_pitot_applied)))
-# print('Err RMS Resynchro : %.3e'%(err_rms_resync))
-# print('Err RMS Resynchro normalized : %.3e'%(err_rms_resync_normalized))
-
-# # Plot répartition des  erreurs de resyncro
-# xpitot = np.reshape(xmes_pitot,[Ntimes,Nxpitot])[0,:]
-# ypitot = np.reshape(ymes_pitot,[Ntimes,Nxpitot])[0,:]
-# err_resync_pitot = r_div_eucli(Delta_phi_tf_pitot_found_o-Delta_phi_np_pitot_applied,2*np.pi/omega_0)
-
-# size_resync = np.log10(err_resync_pitot)
-
-# plt.figure()
-# plt.scatter(xpitot,ypitot,c=np.log10(err_resync_pitot),marker='o',s=1.+size_resync)
-# plt.colorbar()
-# plt.scatter(xmes_cyl,ymes_cyl,c='black',marker='.',s=1.)
-# plt.xlabel('$x$')
-# plt.ylabel('$y$')
-# plt.axis('equal')
-# plt.xlim((Lxmin,Lxmax))
-# plt.ylim((Lymin,Lymax))
-# plt.title('Synchronisation error - log')
-# plt.tight_layout()
-# plt.savefig(repertoire+'/resync_err.png')
-# plt.close()
-
-# Validation resync
-# t_tf_mes_pitot_resync_o = sess.run(t_tf_mes_pitot_resync,tf_dict)
-# tmes_pitot_base = np.asarray([t*np.ones(40) for t in times])
-# tmes_pitot_base = np.ndarray.flatten(tmes_pitot_base)
-# np.sqrt(np.mean(np.square(tmes_pitot_base-t_tf_mes_pitot_resync_o))/np.mean(np.square(tmes_pitot_base)))
 
 
 # =============================================================================
@@ -628,7 +592,7 @@ print('Model exported in '+repertoire)
 
 
 # =============================================================================
-# Verification at a given time between modalPINN and complete data
+# Comparison at a given timestep between modalPINN and simulations data
 # =============================================================================
 inst = 16
 
@@ -646,23 +610,3 @@ suptitle='u difference at t = '+'{0:.2f}'.format(times[inst])
 nnf.tf_plot_compare_3plot(x_tf_mes,y_tf_mes,u_tf_mes,fluid_u_t(x_tf_mes,y_tf_mes,t_tf_mes),sess,xlabel='$x$',ylabel='$y$',title1='Exact',title2='ModalPINN',suptitle='',tf_dict=tf_dict_compare)
 plt.savefig(repertoire+'/diff_u_t_'+'{0:.2f}'.format(times[inst])+'.png')
 
-
-# =============================================================================
-# Export error data into a same file
-# =============================================================================
-
-def Nelts(layers):
-    nelts = 0
-    for k in range(1,len(layers)):
-        nelts += layers[k] + layers[k-1]*layers[k]
-    return 3*nelts
-
-
-print('Exporting error data withb nelts ...')
-file_study = open(filename_study,'a')
-loss_validation_o,loss_eqs_int_o = sess.run([Loss_mes,Loss_int_time_wrap],tf_dict_valid)
-data_export = [0,args.WidthLayer, Nelts(layers),stdNoise,loss_validation_o,loss_eqs_int_o]
-str_data_export = [str(j) for j in data_export]
-str_result = ' '.join(str_data_export) + ' \n '
-file_study.write(str_result)
-file_study.close()
