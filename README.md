@@ -26,7 +26,6 @@ This code is designed to be launched on a computationel cluster (initially for G
 
     #!/bin/bash
     #SBATCH --gres=gpu:t4:1
-    #SBATCH --nodelist=gra1337
     #SBATCH --cpus-per-task=2
     #SBATCH --mem=50G
     #SBATCH --job-name=ModalPINN
