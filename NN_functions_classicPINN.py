@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jul  9 11:05:35 2020
-
-@author: garaya
+This file contains functions specific to
+        o neural networks (construction, initialisation),
+        o optimisers (calling from scipy or tf interfaces, initialisation, training steps),
+        o plots.
+@author: Gaétan Raynaud
 """
 
 # =============================================================================
-# Import des bibliotheques
+# Libraries
 # =============================================================================
 
 import numpy as np
@@ -16,7 +18,7 @@ import pickle
 import time
 
 # =============================================================================
-# Param matplotlib
+# Matplotlib parameters
 # =============================================================================
 
 plt.rc('text', usetex=True)
@@ -28,11 +30,18 @@ plt.rc('figure',titlesize=24)
 
 
 # =============================================================================
-# Fonctions pour définir le NN
+# Functions for defining, restoring and initialising neural networks
 # =============================================================================
 
 
 def initialize_NN(layers,name_nn=''):        
+    '''
+    Initialize a real neural network which structure is defined by layers
+    Input layers : list of integers defining the width of each layer. 
+                   The number of elements in layers defines the depth of the NN
+    Return weights : list of matrices filled with tf.float32 variables
+           biases : list of vectors filled with tf.float32 variables
+    '''
     weights = []
     biases = []
     num_layers = len(layers) 
@@ -73,7 +82,16 @@ def restore_one_NN(layers,w_value,b_value,tf_as_constant=False):
             
 
 def restore_NN(layers,filename_restore,tf_as_constant=False):
-
+    '''
+    Restore u, v and p Classic PINN models 
+    Input layers : list of each layers width
+          filename_restore (str) : location of the pickle archive where the values are stored
+          tf_as_constant (bool) : if True, model's parameters are initialised as tf.constant 
+                                  (and are therefore fixed). Else, they are set as 
+                                  tf.variable and can be trained once again.
+    Return the weights and biases 
+    ''' 
+    
     file = open(filename_restore,'rb')
     w_u_value,b_u_value,w_v_value,b_v_value,w_p_value,b_p_value = pickle.load(file)
     file.close()
@@ -87,6 +105,10 @@ def restore_NN(layers,filename_restore,tf_as_constant=False):
         
 
 def xavier_init(size,name_w):
+    '''
+    Initialisation of weights using xavier init.
+    This function comes from Raissi et al. (2019)
+    '''
     in_dim = size[0]
     out_dim = size[1]        
     xavier_stddev = np.sqrt(2/(in_dim + out_dim))
@@ -94,6 +116,12 @@ def xavier_init(size,name_w):
 
 
 def neural_net(X, weights, biases):
+    '''
+    Construct one neural network as a succession of affine transformation and 
+    non-linear functions (here sigma = tanh)
+    Input : tf.tensor X, weights and biases that define the model
+    Output: tf.tensor Y
+    '''
     H = X
     num_layers = len(weights) + 1
     for l in range(0,num_layers-2):
@@ -118,16 +146,15 @@ def f_BC5(x, y, geom, fact=5.):
 
 
 
-def NN_time_uv(x,y,t,weights,biases,geom,omega_0,trunc_mode=None):
+def NN_time_uv(x,y,t,weights,biases,geom,trunc_mode=None):
     '''
     x,y,t : [Nint,1] tf.float32 tensors, list of coordinates (x,t) where to compute u or v(x,y,t)
-    omega_0 : fondamental frequency
     output : [Nint,1]
     '''
     out_nn = neural_net(tf.transpose(tf.stack([x,y,t])),weights,biases)
     return tf.transpose(out_nn[:,:,0]*f_BC5(x,y,geom)[:,0])
 
-def NN_time_p(x,y,t,weights,biases,omega_0,trunc_mode=None):
+def NN_time_p(x,y,t,weights,biases,trunc_mode=None):
     '''
     x,y,t : [Nint,1] tf.float32 tensors, list of coordinates (x,t) where to compute p(x,y,t)
     output : [Nint,1]

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jul 21 12:30:18 2020
-
-@author: garaya
+This file contains functionsspecific to
+-Load_train_data_desync.py:
+    Python file containing functions that extract and prepare data for training 
+    and validation.
+@author: Gaétan Raynaud
 """
 
 # =============================================================================

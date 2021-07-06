@@ -138,6 +138,9 @@ d = 2.*r_c
 u_in = 1.
 rho_0 = 1.
 
+omega_0 = 1.036 #Dimensionless frequency
+
+
 geom = [Lxmin,Lxmax,Lymin,Lymax,x_c,y_c,r_c]
 
 def xbc5(s):
@@ -167,9 +170,6 @@ multigrid = args.multigrid
 Ngrid = args.Ngrid
 NgridTurn = args.NgridTurn
 stdNoise = args.Noise
-
-list_omega = np.asarray([k*omega_0 for k in range(Nmodes)]) 
-
 
 # Structure of each Neural Network that approximate u,v or p as a function of x,y and t
 layers = [3,args.WidthLayer,args.WidthLayer,args.WidthLayer,args.WidthLayer,1]
@@ -265,7 +265,7 @@ def fluid_u_t(x,y,t):
     Input: x,y,t TF tensors of shape [Nint,1]
     Return TF tensor of shape [Nint,1] with real values
     '''
-    return nnf.NN_time_uv(x,y,t,w_u,b_u,geom,omega_0)
+    return nnf.NN_time_uv(x,y,t,w_u,b_u,geom)
 
 def fluid_v_t(x,y,t):
     '''
@@ -273,7 +273,7 @@ def fluid_v_t(x,y,t):
     Input: x,y,t TF tensors of shape [Nint,1]
     Return TF tensor of shape [Nint,1] with real values
     '''
-    return nnf.NN_time_uv(x,y,t,w_v,b_v,geom,omega_0)
+    return nnf.NN_time_uv(x,y,t,w_v,b_v,geom)
 
 def fluid_p_t(x,y,t):
     '''
@@ -281,7 +281,7 @@ def fluid_p_t(x,y,t):
     Input: x,y,t TF tensors of shape [Nint,1]
     Return TF tensor of shape [Nint,1] with real values
     '''
-    return nnf.NN_time_p(x,y,t,w_p,b_p,omega_0)
+    return nnf.NN_time_p(x,y,t,w_p,b_p)
 
 # =============================================================================
 # Forces on cylinder
@@ -528,7 +528,7 @@ GPUtil.showUtilization()
 
 
 # =============================================================================
-# Entrainement
+# Training
 # =============================================================================
 
 nnf.print_bar()
@@ -549,7 +549,7 @@ t3 = time.time()
 print('Adam training ended after %d s'%(t3-t2))
 
 # =============================================================================
-# GPU use after trai ing
+# GPU use after training
 # =============================================================================
 print('GPU use after training')
 GPUtil.showUtilization()
@@ -558,7 +558,7 @@ GPUtil.showUtilization()
 print('End of training')
 
 # =============================================================================
-# Print des erreurs
+# Print residuals errors and losses
 # =============================================================================
 
 nnf.print_bar()
@@ -576,7 +576,7 @@ nnf.tf_print('Loss mesures validation',Loss_mes,sess,tf_dict_valid)
 
 
 # =============================================================================
-# Save NN Model
+# Save NN Model coefficients in a pickle archive
 # =============================================================================
 
 print('Saving NN Model...')
@@ -592,7 +592,7 @@ print('Model exported in '+repertoire)
 
 
 # =============================================================================
-# Comparison at a given timestep between modalPINN and simulations data
+# Comparison at a given timestep between Classic PINN and simulations data
 # =============================================================================
 inst = 16
 

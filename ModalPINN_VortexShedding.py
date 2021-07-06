@@ -194,7 +194,7 @@ d = 2.*r_c
 u_in = 1. 
 rho_0 = 1.
 
-omega_0 = 1.036 #Domensionless frequency
+omega_0 = 1.036 #Dimensionless frequency
 
 geom = [Lxmin,Lxmax,Lymin,Lymax,x_c,y_c,r_c]
 
@@ -238,7 +238,7 @@ stdNoise = args.Noise # In case of artificially noised data, it defines the
 # or even tf.Variables() that could be optimized during training
 list_omega = np.asarray([k*omega_0 for k in range(Nmodes)]) 
 
-# STructure of each Neural Network that approximate a mode shape
+# Structure of each Neural Network that approximate a mode shape
 layers = [2,args.WidthLayer*Nmodes,args.WidthLayer*Nmodes,Nmodes]
 
 # =============================================================================

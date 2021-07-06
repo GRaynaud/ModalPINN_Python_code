@@ -40,7 +40,7 @@ complex_value_exp = True
 def initialize_NN(layers,name_nn=''):        
     '''
     Initialize a complex neural network which structure is defined by layers
-    Input layers : list of integers defining the wifth of each layer. 
+    Input layers : list of integers defining the width of each layer. 
                    The number of elements in layers defines the depth of the NN
     Return weights : list of matrices filled with tf.complex64 variables
            biases : list of vectors filled with tf.complex64 variables
