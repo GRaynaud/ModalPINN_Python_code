@@ -127,39 +127,6 @@ def read_cut_simulation_data(filename_data,geom):
     return Re, Ur, times, nodes_X, nodes_Y, Us, Vs, Ps
     
 
-# def read_cut_simulation_data_on_cylinder_border(filename_data,geom):
-#     '''
-#     Read simulation data results from filename_data_result
-#     Pick out data that are located only on the cylinder border
-#     ----
-#     Return Re, Ur, times, nodes_X, nodes_Y, Us, Vs, Ps
-#     '''
-#     eps = 1e-5 # Permet d'avoir juste la première rangée de points autour du cylindre
-    
-#     Lxmin,Lxmax,Lymin,Lymax,x_c,y_c,r_c = geom
-#     # Step 1 : data loading
-#     print('Simulation data reading...')
-#     Re, Ur, times, nodes_X, nodes_Y, Us, Vs, Ps = read_flow(filename_data) 
-    
-#     # Step 2 : Selection of points
-#     r = np.sqrt(np.square(nodes_X[0,:]-x_c) + np.square(nodes_Y[0,:]-y_c))
-#     delta_r_rc = np.square(r-r_c) 
-    
-#     condition_cut_cyl = np.where(delta_r_rc < eps, True,False)
-#     index_cut = np.argwhere(condition_cut)[:,0]
-    
-#     # Step 3 : cropping
-    
-#     nodes_X = nodes_X[:,index_cut]
-#     nodes_Y = nodes_Y[:,index_cut]
-#     Us = Us[:,index_cut]
-#     Vs = Vs[:,index_cut]
-#     Ps = Ps[:,index_cut]
-    
-#     print('Reading and cropping simulation data ... ok')
-    
-#     return Re, Ur, times, nodes_X, nodes_Y, Us, Vs, Ps
-
 def cut_data_index(index_space,nodes_X, nodes_Y, Us, Vs, Ps):
     '''
     return data nodes_X, nodes_Y, Us, Vs, Ps [:,index_space]
