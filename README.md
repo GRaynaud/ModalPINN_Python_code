@@ -90,6 +90,4 @@ instead of these:
     w_v,b_v = nnf.initialize_NN(layers)
     w_p,b_p = nnf.initialize_NN(layers)
 
-## Licence
 
-Codes are provided under licence GNU GPL v3.
