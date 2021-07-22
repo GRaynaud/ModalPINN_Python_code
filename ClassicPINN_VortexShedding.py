@@ -106,7 +106,7 @@ parser.add_argument('--multigrid',action="store_true",default=False,help="Use of
 parser.add_argument('--Ngrid',type=int,default=1,help="Number of batch for Adam optimization")
 parser.add_argument('--NgridTurn',type=int,default=1000,help="Number of iterations between each batch changement")
 parser.add_argument('--Noise',type=float,default=0.,help="Define standard deviation of gaussian noise added to measurements")
-parser.add_argument('--WidthLayer',type=int,default=20.,help="Number of neurons per layer and per mode")
+parser.add_argument('--WidthLayer',type=int,default=20,help="Number of neurons per layer and per mode")
 parser.add_argument('--DesyncSparseData',action="store_true",default=False,help="if activated (and --SparseData == True), then simulated measurements are randomly made out of synchronisation")
 
 args = parser.parse_args()
