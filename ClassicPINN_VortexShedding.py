@@ -100,7 +100,8 @@ print(list_devices)
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--Tmax',type=float,default=None,help="Define the max time allowed for optimisation (in hours)")
-parser.add_argument('--Nmes',type=int,default=5000,help="Number of measurement points to provide for optimisation")parser.add_argument('--LossModes',action="store_true",default=False,help="Use of modal equations during optimisation")
+parser.add_argument('--Nmes',type=int,default=5000,help="Number of measurement points to provide for optimisation")
+parser.add_argument('--Nint',type=int,default=50000,help="Number of computing points to provide for equation evaluation during optimisation")
 parser.add_argument('--multigrid',action="store_true",default=False,help="Use of multi grid")
 parser.add_argument('--Ngrid',type=int,default=1,help="Number of batch for Adam optimization")
 parser.add_argument('--NgridTurn',type=int,default=1000,help="Number of iterations between each batch changement")
@@ -111,7 +112,6 @@ args = parser.parse_args()
 
 print('Args passed to python script')
 print('Tmax '+str(args.Tmax)+' (h)')
-print('Nmodes %d' % (args.Nmodes))
 print('Nmes %d' % (args.Nmes))
 print('Nint %d' % (args.Nint))
 print('Multigrid : '+str(args.multigrid))
@@ -417,12 +417,12 @@ def loss_BC(s,t):
     '''    
     x = xbc5(s)
     y = ybc5(s)
-    u_k = fluid_u_t(x,y,t)
-    v_k = fluid_v_t(x,y,t)
+    u = fluid_u_t(x,y,t)
+    v = fluid_v_t(x,y,t)
     
-    err = tf.convert_to_tensor([nnf.square_norm(u_k[0,:,k]) + nnf.square_norm(v_k[0,:,k]) for k in range(Nmodes)])
+    err = tf.square(u) + tf.square(v)
     
-    return tf.reduce_sum(tf.reduce_mean(err,axis=1))
+    return tf.reduce_sum(tf.reduce_mean(err))
 
 
 # =============================================================================
