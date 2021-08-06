@@ -69,13 +69,11 @@ def restore_one_NN(layers,w_value,b_value,tf_as_constant=False):
     num_layers = len(layers) 
     for l in range(0,num_layers-1):
         if tf_as_constant:
-            W = tf.constant(w_value[l],dtype=tf.complex64,shape=[layers[l],layers[l+1]])
-            b = tf.constant(b_value[l],dtype=tf.complex64,shape=[1,layers[l+1]])
-        
+            W = tf.constant(w_value[l],dtype=tf.float32,shape=[layers[l],layers[l+1]])
+            b = tf.constant(b_value[l],dtype=tf.float32,shape=[1,layers[l+1]])
         else:
-            if complex_value_exp:
-                W = tf.Variable(w_value[l],dtype=tf.float32,shape=[layers[l],layers[l+1]])
-                b = tf.Variable(b_value[l],dtype=tf.float32,shape=[1,layers[l+1]])
+            W = tf.Variable(w_value[l],dtype=tf.float32,shape=[layers[l],layers[l+1]])
+            b = tf.Variable(b_value[l],dtype=tf.float32,shape=[1,layers[l+1]])
         weights.append(W)
         biases.append(b)
     return weights,biases
