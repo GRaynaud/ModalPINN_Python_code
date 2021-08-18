@@ -297,7 +297,8 @@ def force_cylinder_flatten(t):
     '''
     Nt = int(t.shape[0])
     Ns = 1000 # Number of points to perform the integration over the border
-    s_cyl = tf.random.uniform([Ns,1], minval=0., maxval = 1., dtype = tf.float32)*tf.transpose(1+0.*t)
+    s_cyl = tf.constant(np.linspace(0.,1.,Ns), dtype = tf.float32, shape = [Ns,1])*tf.transpose(1+0.*t)
+    # s_cyl = tf.random.uniform([Ns,1], minval=0., maxval = 1., dtype = tf.float32)*tf.transpose(1+0.*t)
     s_cyl_r = tf.reshape(s_cyl,[Nt*Ns,1])
     x_cyl_r = tf.reshape(xbc5(s_cyl_r),[Nt*Ns,1])
     y_cyl_r = tf.reshape(ybc5(s_cyl_r),[Nt*Ns,1])
