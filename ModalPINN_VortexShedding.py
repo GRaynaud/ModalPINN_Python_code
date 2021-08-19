@@ -851,7 +851,7 @@ nnf.tf_print('Border',loss_BC(s_tf),sess,tf_dict[0])
 nnf.tf_print('Loss eqs. modes',Loss_int_mode_wrap,sess,tf_dict[0])
 nnf.tf_print('Loss eqs. int time',Loss_int_time_wrap,sess,tf_dict[0])
 nnf.tf_print('Loss mesures training',Loss_mes,sess,tf_dict[0])
-nnf.tf_print('Loss mesures validation',Loss_mes,sess,tf_dict_valid)
+nnf.tf_print('Loss mesures validation',Loss_dense_mes,sess,tf_dict_valid)
     
 if args.DesyncSparseData:
     
