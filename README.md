@@ -1,5 +1,7 @@
 # Python code for ModalPINN
 
+[![DOI](https://zenodo.org/badge/382448585.svg)](https://zenodo.org/badge/latestdoi/382448585)
+
 ## Context
 
 Python code to define, train and output ModalPINNs as defined in the paper
